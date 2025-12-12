@@ -3,31 +3,1005 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ClientPulse</title>
+    <title>ClientPulse - Anexture Project Tracker</title>
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+    
     <style>
-      body {
-        font-family: 'Inter', sans-serif;
+      body { font-family: 'Inter', sans-serif; }
+      
+      /* Animation Utilities */
+      @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
       }
+      .animate-fade-in-up {
+        animation: fadeInUp 0.5s ease-out forwards;
+      }
+      .delay-100 { animation-delay: 100ms; }
     </style>
+
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Libraries UMD -->
+    <!-- Lucide React Icons -->
+    <script src="https://unpkg.com/lucide-react@0.344.0/dist/umd/lucide-react.min.js"></script>
+    <!-- HTML to Image -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+    <!-- jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script type="importmap">
 {
   "imports": {
-    "lucide-react": "https://esm.sh/lucide-react@^0.561.0",
-    "@google/genai": "https://esm.sh/@google/genai@^1.33.0",
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
     "react/": "https://esm.sh/react@^19.2.3/",
     "react": "https://esm.sh/react@^19.2.3",
+    "lucide-react": "https://esm.sh/lucide-react@^0.561.0",
+    "@google/genai": "https://esm.sh/@google/genai@^1.33.0",
     "html-to-image": "https://esm.sh/html-to-image@^1.11.13",
-    "jspdf": "https://esm.sh/jspdf@2.5.1"
+    "jspdf": "https://esm.sh/jspdf@^3.0.4"
   }
 }
 </script>
 </head>
-  <body>
+  <body class="bg-slate-100">
     <div id="root"></div>
+
+    <script type="text/babel" data-type="module">
+      import { GoogleGenAI } from "https://esm.run/@google/genai";
+
+      // --- CONFIGURATION & GLOBALS ---
+      // NOTE: Replace this with your actual API key to make AI features work.
+      window.process = { 
+        env: { 
+          API_KEY: '' 
+        } 
+      };
+
+      const { useState, useRef, useCallback, forwardRef, useEffect } = React;
+      const { createRoot } = ReactDOM;
+      const { toJpeg, toPng } = htmlToImage;
+      const { jsPDF } = jspdf;
+      
+      // Destructure Icons
+      const { 
+        Briefcase, PenTool, Video, Check, Download, Sparkles, Loader2, 
+        ChevronRight, Upload, User, Clock, Palette, Calendar, 
+        Image: ImageIcon, FileText, Globe, Share2,
+        CheckCircle2, Activity, PlayCircle, AlertTriangle, Zap, Layout
+      } = lucideReact;
+
+      // --- TYPES & CONSTANTS ---
+      const ProjectType = {
+        LOGO: 'LOGO',
+        PACKAGE: 'PACKAGE',
+        ADS: 'ADS',
+        WEBSITE: 'WEBSITE',
+        POSTER: 'POSTER'
+      };
+
+      const PROJECT_HANDLERS = [
+        { name: 'Sumana Saha', designation: 'Social Media Marketing Manager' },
+        { name: 'Sukanya Chowdhury', designation: 'Project Manager' },
+        { name: 'Somnath Chowdhury', designation: 'Senior Graphic Designer' }
+      ];
+
+      const DESIGNERS = [
+        'Somnath Chowdhury',
+        'Sumana Saha',
+        'Sukanya Chowdhury',
+        'Design Team'
+      ];
+
+      const PROJECT_TYPES = {
+        [ProjectType.LOGO]: {
+          label: 'Logo Design',
+          icon: 'PenTool',
+          steps: [
+            { id: 'brief', label: 'Brief & Research' },
+            { id: 'sketch', label: 'Sketching Concepts' },
+            { id: 'vector', label: 'Vectorizing' },
+            { id: 'color', label: 'Color Palette Selection' },
+            { id: 'polish', label: 'Final Polish & Formats' },
+          ]
+        },
+        [ProjectType.PACKAGE]: {
+          label: 'Branding Package',
+          icon: 'Package',
+          steps: [
+            { id: 'logo', label: 'Logo Design' },
+            { id: 'poster', label: 'Poster Design' },
+            { id: 'letterhead', label: 'Letterhead' },
+            { id: 'visiting_card', label: 'Visiting Card' },
+            { id: 'intro_video', label: 'Intro Video' },
+          ]
+        },
+        [ProjectType.ADS]: {
+          label: 'Ads Video',
+          icon: 'Video',
+          steps: [
+            { id: 'script', label: 'Scriptwriting' },
+            { id: 'storyboard', label: 'Storyboard' },
+            { id: 'production', label: 'Animation / Filming' },
+            { id: 'voiceover', label: 'Voiceover & Sound' },
+            { id: 'editing', label: 'Editing & Effects' },
+            { id: 'render', label: 'Final Render' },
+          ]
+        },
+        [ProjectType.WEBSITE]: {
+          label: 'Website Design',
+          icon: 'Globe',
+          steps: [
+            { id: 'sitemap', label: 'Sitemap & Wireframe' },
+            { id: 'ui_design', label: 'UI/UX Design' },
+            { id: 'development', label: 'Development (Code/CMS)' },
+            { id: 'content', label: 'Content Upload' },
+            { id: 'testing', label: 'Testing & QA' },
+            { id: 'launch', label: 'Live Launch' },
+          ]
+        },
+        [ProjectType.POSTER]: {
+          label: 'Poster Design',
+          icon: 'Image',
+          steps: [
+            { id: 'concept', label: 'Concept & Copy' },
+            { id: 'layout', label: 'Layout Draft' },
+            { id: 'revision', label: 'Design Revisions' },
+            { id: 'final', label: 'Print Ready File' },
+          ]
+        }
+      };
+
+      // --- SERVICES ---
+      const generateClientUpdate = async (data) => {
+        if (!process.env.API_KEY) {
+            alert("Please set your API_KEY in the code to use AI features.");
+            return "AI Update unavailable (No API Key).";
+        }
+
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        const typeInfo = PROJECT_TYPES[data.type];
+        const progress = data.progress;
+        const handlerInfo = PROJECT_HANDLERS.find(h => h.name === data.projectHandler);
+        const designation = handlerInfo ? handlerInfo.designation : 'Project Manager';
+        
+        const completedLabels = typeInfo.steps
+            .filter(step => data.completedSteps.includes(step.id))
+            .map(step => step.label)
+            .join(', ');
+
+        const nextSteps = typeInfo.steps
+            .filter(step => !data.completedSteps.includes(step.id))
+            .slice(0, 2) 
+            .map(step => step.label)
+            .join(', ');
+
+        let context = `
+            You are ${data.projectHandler}, a ${designation} at Anexture.
+            Write a short, professional, and enthusiastic project update email snippet for a client.
+            
+            Client Name: ${data.clientName || 'Valued Client'}
+            Project Name: ${data.projectName || 'New Project'}
+            Project Type: ${typeInfo.label}
+            Current Progress: ${progress}%
+            Completed Items: ${completedLabels || 'Project Initialization'}
+            Next Steps: ${nextSteps || 'Final Delivery'}
+            Timeline/Duration: ${data.workingTime}
+            Lead Designer: ${data.designer}
+            Target Deadline: ${data.deadline || 'TBD'}
+            Additional Notes: ${data.customNotes}
+        `;
+
+        if (data.isDelayed) {
+            context += `
+            IMPORTANT: The project is currently DELAYED.
+            Reason for Delay: ${data.delayReason}
+            Please write the message in a way that apologizes professionally for the delay, explains the reason clearly, and assures the client that the team (and designer ${data.designer}) is working hard to get back on track.
+            `;
+        } else {
+            context += `
+            The tone should be reassuring and professional. Use "I" or "We" as appropriate from Anexture.
+            `;
+        }
+
+        const prompt = `
+            ${context}
+            
+            Keep it under 80 words.
+            Do not include subject lines or placeholders, just the message body.
+        `;
+
+        try {
+            const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            });
+            return response.text.trim();
+        } catch (error) {
+            console.error("Gemini API Error:", error);
+            return "Could not generate update. Please try again or check your API key.";
+        }
+      };
+
+      // --- COMPONENTS ---
+      
+      const ProgressBar = ({ progress }) => {
+        return (
+            <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 mt-2">
+            <div 
+                className="bg-indigo-600 h-2.5 rounded-full transition-all duration-500 ease-out" 
+                style={{ width: `${progress}%` }}
+            ></div>
+            </div>
+        );
+      };
+
+      const PreviewCard = forwardRef(({ data }, ref) => {
+        const typeInfo = PROJECT_TYPES[data.type];
+        const progress = data.progress;
+        
+        const currentDate = new Date().toLocaleDateString('en-US', { 
+            year: 'numeric', month: 'long', day: 'numeric' 
+        });
+
+        const formattedDeadline = data.deadline ? new Date(data.deadline).toLocaleDateString('en-US', { 
+            month: 'short', day: 'numeric', year: 'numeric'
+        }) : 'TBD';
+
+        return (
+            <div 
+            ref={ref} 
+            className="w-full mx-auto overflow-hidden flex flex-col font-sans text-slate-900 bg-slate-50 relative"
+            style={{ 
+                maxWidth: '800px', 
+                aspectRatio: '1 / 1.414',
+                minHeight: '1000px',
+            }} 
+            >
+            {/* Background Decor */}
+            <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-r from-purple-700 to-indigo-800 rounded-b-[40px]"></div>
+            
+            <div className="p-8 flex-grow flex flex-col h-full relative z-10 gap-6">
+                
+                {/* 1. Header Card */}
+                <div className="bg-white rounded-3xl p-8 shadow-xl shadow-indigo-900/10 flex justify-between items-start">
+                <div>
+                    <div className="flex items-center gap-2 mb-3">
+                    <span className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs font-bold uppercase tracking-widest border border-indigo-100">
+                        Project Status
+                    </span>
+                    {data.isDelayed && (
+                        <span className="px-3 py-1 bg-red-50 text-red-600 rounded-full text-xs font-bold uppercase tracking-widest border border-red-100 animate-pulse">
+                            Attention Needed
+                        </span>
+                    )}
+                    </div>
+                    <h1 className="text-5xl font-black text-slate-900 tracking-tight leading-none mb-2">
+                    {data.projectName || 'Project Name'}
+                    </h1>
+                    <p className="text-slate-500 font-medium text-xl">
+                        {data.clientName || 'Client Name'}
+                    </p>
+                </div>
+                
+                <div className="flex flex-col items-end">
+                    {data.companyLogo ? (
+                        <div className="h-20 w-20 bg-slate-50 rounded-2xl p-2 border border-slate-100 mb-2 flex items-center justify-center">
+                        <img src={data.companyLogo} alt="Client Logo" className="w-full h-full object-contain" />
+                        </div>
+                    ) : (
+                        <div className="h-20 w-20 bg-slate-50 rounded-2xl border border-slate-100 mb-2 flex items-center justify-center text-slate-300">
+                        <Layout className="w-10 h-10" />
+                        </div>
+                    )}
+                    <div className="flex items-center gap-1.5 text-slate-400 text-sm font-bold uppercase tracking-wider">
+                    <Calendar className="w-4 h-4" />
+                    {currentDate}
+                    </div>
+                </div>
+                </div>
+
+                {/* 2. Metrics Row (Cards) */}
+                <div className="grid grid-cols-3 gap-4">
+                    {/* Type Card */}
+                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col justify-between h-40">
+                    <div className="w-12 h-12 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center mb-2">
+                        {data.type === 'LOGO' && <Activity className="w-7 h-7" />}
+                        {data.type === 'PACKAGE' && <Briefcase className="w-7 h-7" />}
+                        {data.type === 'ADS' && <PlayCircle className="w-7 h-7" />}
+                        {data.type === 'WEBSITE' && <Globe className="w-7 h-7" />}
+                        {data.type === 'POSTER' && <ImageIcon className="w-7 h-7" />}
+                    </div>
+                    <div>
+                        <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Project Type</div>
+                        <div className="text-lg font-bold text-slate-800 leading-tight">{typeInfo.label}</div>
+                    </div>
+                    </div>
+
+                    {/* Deadline Card */}
+                    <div className={`rounded-2xl p-6 shadow-sm border flex flex-col justify-between h-40 ${data.isDelayed ? 'bg-red-50 border-red-100' : 'bg-white border-slate-100'}`}>
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-2 ${data.isDelayed ? 'bg-white text-red-500' : 'bg-indigo-50 text-indigo-600'}`}>
+                        {data.isDelayed ? <AlertTriangle className="w-7 h-7" /> : <Zap className="w-7 h-7" />}
+                    </div>
+                    <div>
+                        <div className={`text-xs font-bold uppercase tracking-wider mb-1 ${data.isDelayed ? 'text-red-400' : 'text-slate-400'}`}>Deadline</div>
+                        <div className={`text-lg font-bold leading-tight ${data.isDelayed ? 'text-red-700' : 'text-slate-800'}`}>{formattedDeadline}</div>
+                    </div>
+                    </div>
+
+                    {/* Manager Card */}
+                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col justify-between h-40">
+                    <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center mb-2">
+                        <User className="w-7 h-7" />
+                    </div>
+                    <div>
+                        <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Project Handled By</div>
+                        <div className="text-lg font-bold text-slate-800 leading-tight">{data.projectHandler}</div>
+                    </div>
+                    </div>
+                </div>
+
+                {/* 3. Main Content Grid */}
+                <div className="flex-grow grid grid-cols-12 gap-6">
+                    
+                    {/* Left: Progress Track (Vertical) */}
+                    <div className="col-span-5 bg-white rounded-3xl p-8 shadow-lg shadow-slate-200/50 flex flex-col">
+                        <div className="flex items-center justify-between mb-8">
+                        <h3 className="font-bold text-slate-800 text-xl">Milestones</h3>
+                        <span className="text-sm font-bold text-purple-600 bg-purple-50 px-3 py-1.5 rounded-md">{progress}% Done</span>
+                        </div>
+                        
+                        <div className="space-y-2 relative flex-grow">
+                        <div className="absolute left-[19px] top-3 bottom-3 w-0.5 bg-slate-100"></div>
+                        
+                        {typeInfo.steps.map((step, idx) => {
+                            const isCompleted = data.completedSteps.includes(step.id);
+                            return (
+                                <div key={step.id} className="relative flex items-center gap-5 py-3 group">
+                                    <div className={`z-10 w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${
+                                    isCompleted 
+                                    ? 'bg-purple-600 border-purple-600 text-white shadow-md shadow-purple-200' 
+                                    : 'bg-white border-slate-200 text-slate-300'
+                                    }`}>
+                                    {isCompleted ? <CheckCircle2 className="w-5 h-5" /> : <span className="text-xs font-bold">{idx + 1}</span>}
+                                    </div>
+                                    <div className={`text-base font-bold leading-tight transition-colors ${
+                                    isCompleted ? 'text-slate-800' : 'text-slate-400'
+                                    }`}>
+                                    {step.label}
+                                    </div>
+                                </div>
+                            )
+                        })}
+                        </div>
+                    </div>
+
+                    {/* Right: AI Update & Details */}
+                    <div className="col-span-7 flex flex-col gap-4">
+                        {/* AI Summary Card */}
+                        <div className="bg-slate-900 rounded-3xl p-8 shadow-xl text-white relative overflow-hidden flex-grow">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500 rounded-full blur-[60px] opacity-20 pointer-events-none"></div>
+                        
+                        <div className="flex items-center gap-3 mb-6">
+                            <Sparkles className="w-6 h-6 text-purple-400" />
+                            <h3 className="font-bold text-xl">Team Update</h3>
+                        </div>
+
+                        {data.isDelayed && data.delayReason && (
+                            <div className="mb-6 bg-red-500/10 border border-red-500/20 p-4 rounded-xl">
+                            <p className="text-red-400 text-xs font-bold uppercase tracking-wider mb-1">Delay Reason</p>
+                            <p className="text-red-200 text-base">{data.delayReason}</p>
+                            </div>
+                        )}
+
+                        <div className="text-slate-300 text-xl font-medium leading-relaxed">
+                            {data.aiUpdateText ? (
+                                data.aiUpdateText
+                            ) : (
+                                <span className="text-slate-600 italic text-lg">Generating update...</span>
+                            )}
+                        </div>
+                        </div>
+
+                        {/* Designer Card */}
+                        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex items-center gap-5">
+                        <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center">
+                            <Palette className="w-7 h-7" />
+                        </div>
+                        <div>
+                            <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Lead Designer</div>
+                            <div className="text-lg font-bold text-slate-800">{data.designer}</div>
+                        </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Footer */}
+                <footer className="mt-auto pt-6 border-t border-slate-200 flex justify-between items-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                    <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-purple-600 rounded-full animate-pulse"></div>
+                        <span>Anexture TECH</span>
+                    </div>
+                    <div>Generated via Anexture</div>
+                </footer>
+
+            </div>
+            </div>
+        );
+      });
+      PreviewCard.displayName = 'PreviewCard';
+
+      // --- MAIN APP ---
+      const App = () => {
+        const [data, setData] = useState({
+            clientName: '',
+            projectName: '',
+            type: ProjectType.LOGO,
+            completedSteps: [],
+            progress: 0,
+            customNotes: '',
+            aiUpdateText: '',
+            companyLogo: null,
+            workingTime: '',
+            projectHandler: PROJECT_HANDLERS[0].name,
+            designer: 'Somnath Chowdhury',
+            deadline: '',
+            isDelayed: false,
+            delayReason: '',
+        });
+
+        const [isGenerating, setIsGenerating] = useState(false);
+        const cardRef = useRef(null);
+        const fileInputRef = useRef(null);
+
+        const handleTypeSelect = (type) => {
+            setData(prev => ({ 
+            ...prev, 
+            type, 
+            completedSteps: [], 
+            progress: 0,
+            aiUpdateText: '' 
+            }));
+        };
+
+        const toggleStep = (stepId) => {
+            setData(prev => {
+            const typeInfo = PROJECT_TYPES[prev.type];
+            const exists = prev.completedSteps.includes(stepId);
+            const newSteps = exists
+                ? prev.completedSteps.filter(id => id !== stepId)
+                : [...prev.completedSteps, stepId];
+            
+            const newProgress = Math.round((newSteps.length / typeInfo.steps.length) * 100);
+
+            return { ...prev, completedSteps: newSteps, progress: newProgress };
+            });
+        };
+
+        const handleProgressChange = (e) => {
+            const newVal = parseInt(e.target.value, 10);
+            const typeInfo = PROJECT_TYPES[data.type];
+            
+            const totalSteps = typeInfo.steps.length;
+            const newCompletedSteps = [];
+            
+            if (totalSteps > 0) {
+            typeInfo.steps.forEach((step, index) => {
+                if (newVal >= ((index + 1) / totalSteps) * 100) {
+                    newCompletedSteps.push(step.id);
+                }
+            });
+            }
+
+            setData(prev => ({ ...prev, progress: newVal, completedSteps: newCompletedSteps }));
+        };
+
+        const handleLogoUpload = (e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setData(prev => ({ ...prev, companyLogo: reader.result }));
+            };
+            reader.readAsDataURL(file);
+            }
+        };
+
+        const handleGenerateAI = async () => {
+            setIsGenerating(true);
+            const text = await generateClientUpdate(data);
+            setData(prev => ({ ...prev, aiUpdateText: text }));
+            setIsGenerating(false);
+        };
+
+        const handleDownload = useCallback(async () => {
+            if (cardRef.current === null) {
+            return;
+            }
+
+            try {
+            const element = cardRef.current;
+            const dataUrl = await toJpeg(element, { 
+                quality: 0.95, 
+                pixelRatio: 2, 
+                backgroundColor: '#f8fafc',
+                width: element.offsetWidth,
+                height: element.scrollHeight 
+            });
+            
+            const link = document.createElement('a');
+            link.download = `${data.projectName || 'project'}-update.jpg`;
+            link.href = dataUrl;
+            link.click();
+            } catch (err) {
+            console.error('Failed to download image', err);
+            }
+        }, [data.projectName]);
+
+        const handleDownloadPDF = useCallback(async () => {
+            if (cardRef.current === null) {
+            return;
+            }
+
+            try {
+            const element = cardRef.current;
+            const imgData = await toPng(element, { 
+                quality: 1.0, 
+                pixelRatio: 2, 
+                backgroundColor: '#f8fafc', 
+                width: element.offsetWidth,
+                height: element.scrollHeight 
+            });
+
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4',
+            });
+
+            const imgProps = pdf.getImageProperties(imgData);
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            
+            const margin = 0;
+            const availableWidth = pdfWidth - (margin * 2);
+            
+            const ratio = availableWidth / imgProps.width;
+            const imgHeight = imgProps.height * ratio;
+            
+            pdf.addImage(imgData, 'PNG', margin, margin, availableWidth, imgHeight);
+            pdf.save(`${data.projectName || 'project'}-update.pdf`);
+
+            } catch (err) {
+            console.error('Failed to download PDF', err);
+            }
+        }, [data.projectName]);
+
+        const handleShareWhatsApp = async () => {
+            if (cardRef.current === null) return;
+
+            const typeLabel = PROJECT_TYPES[data.type].label;
+            const text = `*Project Update: ${data.projectName || 'New Project'}*\n` +
+                        `Client: ${data.clientName || 'Client'}\n` +
+                        `Type: ${typeLabel}\n` +
+                        `Status: ${data.progress}% Complete\n` +
+                        `Deadline: ${data.deadline ? new Date(data.deadline).toLocaleDateString() : 'TBD'}\n\n` +
+                        `*Latest Update:*\n${data.aiUpdateText || 'No detailed update generated yet.'}\n\n` +
+                        `_Generated via Anexture TECH_`;
+
+            try {
+            if (navigator.share) {
+                const element = cardRef.current;
+                const dataUrl = await toJpeg(element, { 
+                    quality: 0.95, 
+                    pixelRatio: 2, 
+                    backgroundColor: '#f8fafc',
+                    width: element.offsetWidth,
+                    height: element.scrollHeight 
+                });
+                const blob = await (await fetch(dataUrl)).blob();
+                const file = new File([blob], `${data.projectName || 'update'}.jpg`, { type: 'image/jpeg' });
+
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    title: 'Project Update',
+                    text: text,
+                    files: [file]
+                });
+                return; 
+                }
+            }
+
+            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+            window.open(whatsappUrl, '_blank');
+
+            } catch (error) {
+            console.error("Share failed", error);
+            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+            window.open(whatsappUrl, '_blank');
+            }
+        };
+
+        const currentTypeInfo = PROJECT_TYPES[data.type];
+
+        const getIcon = (iconName) => {
+            switch(iconName) {
+            case 'PenTool': return PenTool;
+            case 'Package': return Briefcase; 
+            case 'Video': return Video;
+            case 'Globe': return Globe;
+            case 'Image': return ImageIcon;
+            default: return PenTool;
+            }
+        };
+
+        return (
+            <div className="min-h-screen bg-slate-100 text-slate-800 p-4 md:p-8 font-sans">
+            <div className="max-w-[1600px] mx-auto grid grid-cols-1 xl:grid-cols-2 gap-8">
+                
+                {/* LEFT COLUMN: Controls */}
+                <div className="space-y-6 animate-fade-in-up max-w-2xl mx-auto xl:mx-0 w-full">
+                <header className="mb-8">
+                    <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">
+                        Anexture
+                    </span>
+                    <span className="text-sm font-medium text-slate-500 tracking-normal ml-2">Project Tracker</span>
+                    </h1>
+                    <p className="text-slate-500 mt-2">Design smart, professional updates for your clients in seconds.</p>
+                </header>
+
+                {/* Project Details */}
+                <section className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <h2 className="text-lg font-semibold mb-4 text-slate-800 flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs">1</span>
+                    Project Details
+                    </h2>
+                    <div className="grid grid-cols-1 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Client Name</label>
+                        <input
+                            type="text"
+                            value={data.clientName}
+                            onChange={(e) => setData({ ...data, clientName: e.target.value })}
+                            placeholder="e.g. Acme Corp"
+                            className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all"
+                        />
+                        </div>
+                        <div>
+                        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Project Name</label>
+                        <input
+                            type="text"
+                            value={data.projectName}
+                            onChange={(e) => setData({ ...data, projectName: e.target.value })}
+                            placeholder="e.g. Summer Campaign"
+                            className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all"
+                        />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                        <div>
+                        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Project Handled By</label>
+                        <div className="relative">
+                            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <select 
+                                value={data.projectHandler}
+                                onChange={(e) => setData({...data, projectHandler: e.target.value})}
+                                className="w-full pl-9 p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all appearance-none text-sm"
+                            >
+                                {PROJECT_HANDLERS.map(handler => (
+                                <option key={handler.name} value={handler.name}>{handler.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                        </div>
+                        <div>
+                        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Lead Designer</label>
+                        <div className="relative">
+                            <Palette className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <select 
+                                value={data.designer}
+                                onChange={(e) => setData({...data, designer: e.target.value})}
+                                className="w-full pl-9 p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all appearance-none text-sm"
+                            >
+                                {DESIGNERS.map(name => (
+                                <option key={name} value={name}>{name}</option>
+                                ))}
+                            </select>
+                        </div>
+                        </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                        <div>
+                        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Working Time / Duration</label>
+                        <div className="relative">
+                            <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <input
+                            type="text"
+                            value={data.workingTime}
+                            onChange={(e) => setData({ ...data, workingTime: e.target.value })}
+                            placeholder="e.g. 2 Weeks"
+                            className="w-full pl-9 p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all text-sm"
+                            />
+                        </div>
+                        </div>
+                        <div>
+                        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Deadline Date</label>
+                        <div className="relative">
+                            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <input
+                            type="date"
+                            value={data.deadline}
+                            onChange={(e) => setData({ ...data, deadline: e.target.value })}
+                            className="w-full pl-9 p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all text-sm"
+                            />
+                        </div>
+                        </div>
+                    </div>
+
+                    <div className="pt-2">
+                        <div className="flex items-center gap-3 mb-2">
+                            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Project Delayed?</label>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                            <input 
+                                type="checkbox" 
+                                checked={data.isDelayed}
+                                onChange={(e) => setData({...data, isDelayed: e.target.checked})}
+                                className="sr-only peer" 
+                            />
+                            <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
+                            </label>
+                        </div>
+                        
+                        {data.isDelayed && (
+                        <div className="animate-fade-in-up">
+                            <label className="block text-xs font-semibold text-red-500 uppercase tracking-wider mb-1">Reason for Delay / Comments</label>
+                            <textarea 
+                                className="w-full p-3 bg-red-50 border border-red-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:outline-none text-sm min-h-[60px]"
+                                placeholder="e.g. Waiting for high-res assets from client..."
+                                value={data.delayReason}
+                                onChange={(e) => setData({...data, delayReason: e.target.value})}
+                            />
+                        </div>
+                        )}
+                    </div>
+
+                    <div className="pt-2">
+                        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Company Logo</label>
+                        <div 
+                        className="border-2 border-dashed border-slate-200 rounded-lg p-4 text-center hover:bg-slate-50 transition-colors cursor-pointer group"
+                        onClick={() => fileInputRef.current?.click()}
+                        >
+                        <input 
+                            type="file" 
+                            ref={fileInputRef} 
+                            className="hidden" 
+                            accept="image/*"
+                            onChange={handleLogoUpload} 
+                        />
+                        {data.companyLogo ? (
+                            <div className="flex items-center justify-center gap-3">
+                            <img src={data.companyLogo} alt="Logo" className="h-10 object-contain" />
+                            <span className="text-xs text-indigo-600 font-medium">Click to replace</span>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center gap-1">
+                            <Upload className="w-5 h-5 text-slate-400 group-hover:text-indigo-500 transition-colors" />
+                            <span className="text-xs text-slate-500">Upload your logo (Optional)</span>
+                            </div>
+                        )}
+                        </div>
+                    </div>
+                    </div>
+                </section>
+
+                {/* Project Type */}
+                <section className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <h2 className="text-lg font-semibold mb-4 text-slate-800 flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs">2</span>
+                    Project Type
+                    </h2>
+                    <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+                    {[
+                        { type: ProjectType.LOGO, iconName: 'PenTool', label: 'Logo' },
+                        { type: ProjectType.PACKAGE, iconName: 'Package', label: 'Package' },
+                        { type: ProjectType.ADS, iconName: 'Video', label: 'Ads' },
+                        { type: ProjectType.WEBSITE, iconName: 'Globe', label: 'Website' },
+                        { type: ProjectType.POSTER, iconName: 'Image', label: 'Poster' },
+                    ].map((item) => {
+                        const Icon = getIcon(item.iconName);
+                        return (
+                            <button
+                            key={item.type}
+                            onClick={() => handleTypeSelect(item.type)}
+                            className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all duration-200 ${
+                                data.type === item.type
+                                ? 'border-indigo-600 bg-indigo-50 text-indigo-700 shadow-md transform scale-105'
+                                : 'border-slate-100 bg-slate-50 text-slate-500 hover:border-indigo-200 hover:bg-white'
+                            }`}
+                            >
+                            <Icon className={`w-5 h-5 mb-2 ${data.type === item.type ? 'text-indigo-600' : 'text-slate-400'}`} />
+                            <span className="text-[10px] sm:text-xs font-bold text-center">{item.label}</span>
+                            </button>
+                        );
+                    })}
+                    </div>
+                </section>
+
+                {/* Progress Tracking */}
+                <section className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs">3</span>
+                        Track Progress
+                    </h2>
+                    <span className="text-sm font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md">{data.progress}%</span>
+                    </div>
+                    
+                    <div className="mb-6">
+                    {data.type === ProjectType.LOGO ? (
+                        <div className="px-2 py-4">
+                            <label htmlFor="progress-slider" className="block text-sm font-medium text-slate-700 mb-2">
+                            Work Completion Percentage
+                            </label>
+                            <div className="flex items-center gap-4">
+                            <input 
+                                id="progress-slider"
+                                type="range" 
+                                min="0" 
+                                max="100" 
+                                value={data.progress} 
+                                onChange={handleProgressChange}
+                                className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                            />
+                            <div className="w-16 text-right">
+                                <span className="text-lg font-bold text-indigo-600">{data.progress}%</span>
+                            </div>
+                            </div>
+                            <p className="text-xs text-slate-400 mt-2">Adjust the slider to reflect the current status of the logo design.</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                        {currentTypeInfo.steps.map((step) => (
+                            <label key={step.id} className="flex items-center p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors border border-transparent hover:border-slate-200 group">
+                            <div className="relative flex items-center">
+                                <input
+                                type="checkbox"
+                                checked={data.completedSteps.includes(step.id)}
+                                onChange={() => toggleStep(step.id)}
+                                className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border border-slate-300 transition-all checked:border-indigo-600 checked:bg-indigo-600"
+                                />
+                                <Check className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 pointer-events-none" />
+                            </div>
+                            <span className={`ml-3 text-sm font-medium transition-colors ${data.completedSteps.includes(step.id) ? 'text-slate-900' : 'text-slate-500'}`}>
+                                {step.label}
+                            </span>
+                            </label>
+                        ))}
+                        </div>
+                    )}
+                    </div>
+
+                    <div className="pt-4 border-t border-slate-100">
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Add more details (Optional)</label>
+                    <textarea 
+                        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm min-h-[80px]"
+                        placeholder="e.g. Waiting for client feedback on color palette..."
+                        value={data.customNotes}
+                        onChange={(e) => setData({...data, customNotes: e.target.value})}
+                    />
+                    </div>
+                </section>
+
+                {/* Action Buttons */}
+                <div className="flex flex-col gap-4 pt-4 border-t border-slate-200">
+                    <button
+                    onClick={handleGenerateAI}
+                    disabled={isGenerating}
+                    className="w-full flex items-center justify-center gap-2 py-3 px-6 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 transform hover:-translate-y-0.5 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+                    >
+                    {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+                    {data.aiUpdateText ? 'Regenerate Update' : 'Generate Update'}
+                    </button>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                    <button
+                        onClick={handleDownload}
+                        className="flex-1 flex items-center justify-center gap-2 py-3 px-6 bg-white border-2 border-slate-200 text-slate-700 hover:border-indigo-600 hover:text-indigo-600 rounded-xl font-bold shadow-sm transform hover:-translate-y-0.5 transition-all"
+                    >
+                        <ImageIcon className="w-5 h-5" />
+                        Download JPG
+                    </button>
+                    
+                    <button
+                        onClick={handleDownloadPDF}
+                        className="flex-1 flex items-center justify-center gap-2 py-3 px-6 bg-white border-2 border-slate-200 text-slate-700 hover:border-red-600 hover:text-red-600 rounded-xl font-bold shadow-sm transform hover:-translate-y-0.5 transition-all"
+                    >
+                        <FileText className="w-5 h-5" />
+                        Download PDF
+                    </button>
+                    </div>
+
+                    <button
+                    onClick={handleShareWhatsApp}
+                    className="w-full flex items-center justify-center gap-2 py-3 px-6 bg-[#25D366] hover:bg-[#128C7E] text-white rounded-xl font-bold shadow-sm transform hover:-translate-y-0.5 transition-all"
+                    >
+                    <Share2 className="w-5 h-5" />
+                    Share to WhatsApp
+                    </button>
+                </div>
+                </div>
+
+                {/* RIGHT COLUMN: Preview & Output */}
+                <div className="xl:sticky xl:top-8 h-fit space-y-6 animate-fade-in-up delay-100 flex flex-col items-center xl:items-start">
+                <div className="bg-slate-200/50 p-6 rounded-3xl border border-slate-200/60 backdrop-blur-xl w-full">
+                    <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                        Live Document Preview
+                        <ChevronRight className="w-4 h-4" />
+                    </h2>
+                    {/* Small header buttons */}
+                    <div className="flex gap-2">
+                        <button
+                            onClick={handleDownload}
+                            className="p-2 bg-white text-slate-500 border border-slate-200 hover:border-indigo-300 hover:text-indigo-600 rounded-lg transition-all shadow-sm"
+                            title="Download JPG"
+                        >
+                            <Download className="w-4 h-4" />
+                        </button>
+                        <button
+                            onClick={handleDownloadPDF}
+                            className="p-2 bg-white text-slate-500 border border-slate-200 hover:border-red-300 hover:text-red-600 rounded-lg transition-all shadow-sm"
+                            title="Download PDF"
+                        >
+                            <FileText className="w-4 h-4" />
+                        </button>
+                        <button
+                            onClick={handleShareWhatsApp}
+                            className="p-2 bg-[#25D366] text-white border border-transparent hover:bg-[#128C7E] rounded-lg transition-all shadow-sm"
+                            title="Share to WhatsApp"
+                        >
+                            <Share2 className="w-4 h-4" />
+                        </button>
+                    </div>
+                    </div>
+                    
+                    {/* The Actual Card Component */}
+                    <div className="overflow-x-auto pb-4 w-full flex justify-center">
+                    <div className="origin-top transform scale-[0.6] sm:scale-[0.7] md:scale-[0.8] lg:scale-[0.9] xl:scale-100 transition-transform">
+                        <PreviewCard ref={cardRef} data={data} />
+                    </div>
+                    </div>
+
+                    <p className="text-center text-xs text-slate-400 mt-2">
+                    Preview is scaled to fit screen. Final output is full A4 quality.
+                    </p>
+                </div>
+                </div>
+
+            </div>
+            </div>
+        );
+      };
+
+      // --- MOUNT ---
+      const root = createRoot(document.getElementById('root'));
+      root.render(<App />);
+
+    </script>
   </body>
 </html>
