@@ -7,8 +7,6 @@ import {
   Video, 
   Check, 
   Download, 
-  Sparkles, 
-  Loader2,
   ChevronRight,
   Upload,
   User,
@@ -21,7 +19,6 @@ import {
   Share2
 } from 'lucide-react';
 import { ProjectType, ProjectData, PROJECT_TYPES, PROJECT_HANDLERS, DESIGNERS } from './types';
-import { generateClientUpdate } from './services/geminiService';
 import { PreviewCard } from './components/PreviewCard';
 import { ProgressBar } from './components/ProgressBar';
 
@@ -33,7 +30,6 @@ const App: React.FC = () => {
     completedSteps: [],
     progress: 0,
     customNotes: '',
-    aiUpdateText: '',
     companyLogo: null,
     workingTime: '',
     projectHandler: PROJECT_HANDLERS[0].name,
@@ -43,7 +39,6 @@ const App: React.FC = () => {
     delayReason: '',
   });
 
-  const [isGenerating, setIsGenerating] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -53,7 +48,6 @@ const App: React.FC = () => {
       type, 
       completedSteps: [], 
       progress: 0,
-      aiUpdateText: '' 
     }));
   };
 
@@ -100,13 +94,6 @@ const App: React.FC = () => {
       };
       reader.readAsDataURL(file);
     }
-  };
-
-  const handleGenerateAI = async () => {
-    setIsGenerating(true);
-    const text = await generateClientUpdate(data);
-    setData(prev => ({ ...prev, aiUpdateText: text }));
-    setIsGenerating(false);
   };
 
   const handleDownload = useCallback(async () => {
@@ -184,9 +171,9 @@ const App: React.FC = () => {
                  `Client: ${data.clientName || 'Client'}\n` +
                  `Type: ${typeLabel}\n` +
                  `Status: ${data.progress}% Complete\n` +
-                 `Deadline: ${data.deadline ? new Date(data.deadline).toLocaleDateString() : 'TBD'}\n\n` +
-                 `*Latest Update:*\n${data.aiUpdateText || 'No detailed update generated yet.'}\n\n` +
-                 `_Generated via Anexture TECH_`;
+                 `Deadline: ${data.deadline ? new Date(data.deadline).toLocaleDateString() : 'TBD'}\n` +
+                 (data.customNotes ? `\n*Note:*\n${data.customNotes}\n` : '') +
+                 `\n_Generated via Anexture TECH_`;
 
     try {
       // 1. Try Native Share (Mobile - supports images)
@@ -504,14 +491,7 @@ const App: React.FC = () => {
 
           {/* Action Buttons */}
           <div className="flex flex-col gap-4 pt-4 border-t border-slate-200">
-            <button
-              onClick={handleGenerateAI}
-              disabled={isGenerating}
-              className="w-full flex items-center justify-center gap-2 py-3 px-6 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 transform hover:-translate-y-0.5 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
-            >
-              {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-              {data.aiUpdateText ? 'Regenerate Update' : 'Generate Update'}
-            </button>
+            {/* Removed AI Generation Button */}
             
             <div className="grid grid-cols-2 gap-4">
               <button
@@ -575,7 +555,7 @@ const App: React.FC = () => {
                </div>
             </div>
             
-            {/* The Actual Card Component - Rendered with a transform scale for better fit if needed, but here we just let it be big and scrollable if needed or scale down via CSS */}
+            {/* The Actual Card Component */}
             <div className="overflow-x-auto pb-4 w-full flex justify-center">
                <div className="origin-top transform scale-[0.6] sm:scale-[0.7] md:scale-[0.8] lg:scale-[0.9] xl:scale-100 transition-transform">
                   <PreviewCard ref={cardRef} data={data} />

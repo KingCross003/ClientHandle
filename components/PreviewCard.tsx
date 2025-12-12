@@ -9,7 +9,6 @@ import {
   Palette, 
   Calendar, 
   AlertTriangle,
-  Sparkles,
   Zap,
   Globe,
   Image as ImageIcon,
@@ -162,32 +161,19 @@ export const PreviewCard = forwardRef<HTMLDivElement, PreviewCardProps>(({ data 
                 </div>
             </div>
 
-            {/* Right: AI Update & Details */}
+            {/* Right: Details */}
             <div className="col-span-7 flex flex-col gap-4">
-                {/* AI Summary Card */}
-                <div className="bg-slate-900 rounded-3xl p-8 shadow-xl text-white relative overflow-hidden flex-grow">
-                   <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500 rounded-full blur-[60px] opacity-20 pointer-events-none"></div>
-                   
-                   <div className="flex items-center gap-3 mb-6">
-                      <Sparkles className="w-6 h-6 text-purple-400" />
-                      <h3 className="font-bold text-xl">Team Update</h3>
-                   </div>
-
-                   {data.isDelayed && data.delayReason && (
-                    <div className="mb-6 bg-red-500/10 border border-red-500/20 p-4 rounded-xl">
-                       <p className="text-red-400 text-xs font-bold uppercase tracking-wider mb-1">Delay Reason</p>
-                       <p className="text-red-200 text-base">{data.delayReason}</p>
+                
+                {/* Delay Card (only if delayed) */}
+                {data.isDelayed && data.delayReason && (
+                    <div className="bg-red-50 border border-red-200 p-6 rounded-3xl shadow-sm">
+                       <div className="flex items-center gap-3 mb-2">
+                          <AlertTriangle className="w-5 h-5 text-red-500" />
+                          <h3 className="font-bold text-red-700 text-lg">Delay Information</h3>
+                       </div>
+                       <p className="text-red-600 text-base">{data.delayReason}</p>
                     </div>
-                   )}
-
-                   <div className="text-slate-300 text-xl font-medium leading-relaxed">
-                      {data.aiUpdateText ? (
-                          data.aiUpdateText
-                      ) : (
-                          <span className="text-slate-600 italic text-lg">Generating update...</span>
-                      )}
-                   </div>
-                </div>
+                )}
 
                 {/* Designer Card */}
                 <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex items-center gap-5">

@@ -18,7 +18,6 @@ export interface ProjectData {
   completedSteps: string[];
   progress: number;
   customNotes: string;
-  aiUpdateText: string;
   companyLogo: string | null;
   workingTime: string;
   projectHandler: string;

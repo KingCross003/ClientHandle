@@ -59,15 +59,6 @@
     <div id="root"></div>
 
     <script type="text/babel" data-type="module">
-      import { GoogleGenAI } from "https://esm.run/@google/genai";
-
-      // --- CONFIGURATION & GLOBALS ---
-      // NOTE: You can add your API key here, but it is no longer required for the app to run (Demo Mode will active).
-      window.process = { 
-        env: { 
-          API_KEY: '' 
-        } 
-      };
 
       const { useState, useRef, useCallback, forwardRef, useEffect } = React;
       const { createRoot } = ReactDOM;
@@ -76,8 +67,7 @@
       
       // Destructure Icons
       const { 
-        Briefcase, PenTool, Video, Check, Download, Sparkles, Loader2, 
-        ChevronRight, Upload, User, Clock, Palette, Calendar, 
+        Briefcase, PenTool, Video, Check, Download, ChevronRight, Upload, User, Clock, Palette, Calendar, 
         Image: ImageIcon, FileText, Globe, Share2,
         CheckCircle2, Activity, PlayCircle, AlertTriangle, Zap, Layout
       } = lucideReact;
@@ -160,84 +150,6 @@
             { id: 'revision', label: 'Design Revisions' },
             { id: 'final', label: 'Print Ready File' },
           ]
-        }
-      };
-
-      // --- SERVICES ---
-      const generateClientUpdate = async (data) => {
-        // Fallback if no API Key is provided (Demo Mode)
-        if (!process.env.API_KEY) {
-            console.log("No API Key detected. Using mock response.");
-            const typeInfo = PROJECT_TYPES[data.type];
-            const nextStep = typeInfo.steps.find(step => !data.completedSteps.includes(step.id))?.label || 'Final Delivery';
-            
-            // Artificial delay to simulate AI thinking
-            await new Promise(resolve => setTimeout(resolve, 800));
-
-            return `[DEMO MODE]\nHello ${data.clientName || 'Client'},\n\nWe are pleased to share an update on ${data.projectName || 'your project'}. The team has made great progress on the ${typeInfo.label}, reaching ${data.progress}% completion. We are currently focusing on ${nextStep}. Everything is moving forward smoothly.\n\nBest,\n${data.projectHandler}`;
-        }
-
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-        const typeInfo = PROJECT_TYPES[data.type];
-        const progress = data.progress;
-        const handlerInfo = PROJECT_HANDLERS.find(h => h.name === data.projectHandler);
-        const designation = handlerInfo ? handlerInfo.designation : 'Project Manager';
-        
-        const completedLabels = typeInfo.steps
-            .filter(step => data.completedSteps.includes(step.id))
-            .map(step => step.label)
-            .join(', ');
-
-        const nextSteps = typeInfo.steps
-            .filter(step => !data.completedSteps.includes(step.id))
-            .slice(0, 2) 
-            .map(step => step.label)
-            .join(', ');
-
-        let context = `
-            You are ${data.projectHandler}, a ${designation} at Anexture.
-            Write a short, professional, and enthusiastic project update email snippet for a client.
-            
-            Client Name: ${data.clientName || 'Valued Client'}
-            Project Name: ${data.projectName || 'New Project'}
-            Project Type: ${typeInfo.label}
-            Current Progress: ${progress}%
-            Completed Items: ${completedLabels || 'Project Initialization'}
-            Next Steps: ${nextSteps || 'Final Delivery'}
-            Timeline/Duration: ${data.workingTime}
-            Lead Designer: ${data.designer}
-            Target Deadline: ${data.deadline || 'TBD'}
-            Additional Notes: ${data.customNotes}
-        `;
-
-        if (data.isDelayed) {
-            context += `
-            IMPORTANT: The project is currently DELAYED.
-            Reason for Delay: ${data.delayReason}
-            Please write the message in a way that apologizes professionally for the delay, explains the reason clearly, and assures the client that the team (and designer ${data.designer}) is working hard to get back on track.
-            `;
-        } else {
-            context += `
-            The tone should be reassuring and professional. Use "I" or "We" as appropriate from Anexture.
-            `;
-        }
-
-        const prompt = `
-            ${context}
-            
-            Keep it under 80 words.
-            Do not include subject lines or placeholders, just the message body.
-        `;
-
-        try {
-            const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            });
-            return response.text.trim();
-        } catch (error) {
-            console.error("Gemini API Error:", error);
-            return "Could not generate update. Please check your API key or network connection.";
         }
       };
 
@@ -394,32 +306,19 @@
                         </div>
                     </div>
 
-                    {/* Right: AI Update & Details */}
+                    {/* Right: Details */}
                     <div className="col-span-7 flex flex-col gap-4">
-                        {/* AI Summary Card */}
-                        <div className="bg-slate-900 rounded-3xl p-8 shadow-xl text-white relative overflow-hidden flex-grow">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500 rounded-full blur-[60px] opacity-20 pointer-events-none"></div>
                         
-                        <div className="flex items-center gap-3 mb-6">
-                            <Sparkles className="w-6 h-6 text-purple-400" />
-                            <h3 className="font-bold text-xl">Team Update</h3>
-                        </div>
-
+                        {/* Delay Card (only if delayed) */}
                         {data.isDelayed && data.delayReason && (
-                            <div className="mb-6 bg-red-500/10 border border-red-500/20 p-4 rounded-xl">
-                            <p className="text-red-400 text-xs font-bold uppercase tracking-wider mb-1">Delay Reason</p>
-                            <p className="text-red-200 text-base">{data.delayReason}</p>
+                            <div className="bg-red-50 border border-red-200 p-6 rounded-3xl shadow-sm">
+                            <div className="flex items-center gap-3 mb-2">
+                                <AlertTriangle className="w-5 h-5 text-red-500" />
+                                <h3 className="font-bold text-red-700 text-lg">Delay Information</h3>
+                            </div>
+                            <p className="text-red-600 text-base">{data.delayReason}</p>
                             </div>
                         )}
-
-                        <div className="text-slate-300 text-xl font-medium leading-relaxed">
-                            {data.aiUpdateText ? (
-                                data.aiUpdateText
-                            ) : (
-                                <span className="text-slate-600 italic text-lg">Generating update...</span>
-                            )}
-                        </div>
-                        </div>
 
                         {/* Designer Card */}
                         <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex items-center gap-5">
@@ -458,7 +357,6 @@
             completedSteps: [],
             progress: 0,
             customNotes: '',
-            aiUpdateText: '',
             companyLogo: null,
             workingTime: '',
             projectHandler: PROJECT_HANDLERS[0].name,
@@ -468,7 +366,6 @@
             delayReason: '',
         });
 
-        const [isGenerating, setIsGenerating] = useState(false);
         const cardRef = useRef(null);
         const fileInputRef = useRef(null);
 
@@ -478,7 +375,6 @@
             type, 
             completedSteps: [], 
             progress: 0,
-            aiUpdateText: '' 
             }));
         };
 
@@ -523,13 +419,6 @@
             };
             reader.readAsDataURL(file);
             }
-        };
-
-        const handleGenerateAI = async () => {
-            setIsGenerating(true);
-            const text = await generateClientUpdate(data);
-            setData(prev => ({ ...prev, aiUpdateText: text }));
-            setIsGenerating(false);
         };
 
         const handleDownload = useCallback(async () => {
@@ -603,9 +492,9 @@
                         `Client: ${data.clientName || 'Client'}\n` +
                         `Type: ${typeLabel}\n` +
                         `Status: ${data.progress}% Complete\n` +
-                        `Deadline: ${data.deadline ? new Date(data.deadline).toLocaleDateString() : 'TBD'}\n\n` +
-                        `*Latest Update:*\n${data.aiUpdateText || 'No detailed update generated yet.'}\n\n` +
-                        `_Generated via Anexture TECH_`;
+                        `Deadline: ${data.deadline ? new Date(data.deadline).toLocaleDateString() : 'TBD'}\n` +
+                        (data.customNotes ? `\n*Note:*\n${data.customNotes}\n` : '') +
+                        `\n_Generated via Anexture TECH_`;
 
             try {
             if (navigator.share) {
@@ -916,15 +805,6 @@
 
                 {/* Action Buttons */}
                 <div className="flex flex-col gap-4 pt-4 border-t border-slate-200">
-                    <button
-                    onClick={handleGenerateAI}
-                    disabled={isGenerating}
-                    className="w-full flex items-center justify-center gap-2 py-3 px-6 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 transform hover:-translate-y-0.5 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
-                    >
-                    {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-                    {data.aiUpdateText ? 'Regenerate Update' : 'Generate Update'}
-                    </button>
-                    
                     <div className="grid grid-cols-2 gap-4">
                     <button
                         onClick={handleDownload}
